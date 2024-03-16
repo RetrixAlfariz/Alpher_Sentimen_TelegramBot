@@ -1,0 +1,11 @@
+transformers
+datasets
+evaluate
+torch
+scikit-learn
+tqdm
+llama-cpp-python
+pandas
+python-dotenv
+Telethon == 1.34.0
+python-telegram-bot == 20.8
