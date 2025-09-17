@@ -1,26 +1,20 @@
+import os
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torch
-def predict_sentiment(model_path,text):
-    model = AutoModelForSequenceClassification.from_pretrained(model_path)
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    # memilih device yang tepat
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-    # Tokenisasi teks
-    inputs = tokenizer(text, padding=True, truncation=True, max_length=128, return_tensors="pt")
-    inputs = {key: value.to(device) for key, value in inputs.items()}
 
-    # Mendapatkan prediksi dari model
+_MODEL_PATH = os.getenv("MODEL_PATH", "model")
+_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+_TOKENIZER = AutoTokenizer.from_pretrained(_MODEL_PATH)
+_MODEL = AutoModelForSequenceClassification.from_pretrained(_MODEL_PATH)
+_MODEL.to(_DEVICE)
+_MODEL.eval()
+_LABEL_DICT = {1: "positif", 0: "netral", 2: "negatif"}
+
+def predict_sentiment(text: str) -> str:
+    inputs = _TOKENIZER(text, padding=True, truncation=True, max_length=128, return_tensors="pt")
+    inputs = {key: value.to(_DEVICE) for key, value in inputs.items()}
     with torch.no_grad():
-        logits = model(**inputs).logits
-
-    # Mengubah logits ke probabilitas
+        logits = _MODEL(**inputs).logits
     probabilities = torch.nn.functional.softmax(logits, dim=-1)
-
-    # Mengambil kelas dengan probabilitas tertinggi
     predicted_class = torch.argmax(probabilities, dim=-1).item()
-    
-    # Reverse integer menjadi value
-    label_dict = {1:'positif', 0:'netral', 2:'negatif'}
-    predicted_class = label_dict[predicted_class]
-    return predicted_class
+    return _LABEL_DICT.get(predicted_class, "tidak diketahui")
